@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+using System.IO;
+
 public class Player : MonoBehaviour
 {
 	public int playerNumber;
@@ -15,7 +17,9 @@ public class Player : MonoBehaviour
 	public Transform cam, board;
 	public PoolIndex index;
 	public Pool pool;
-	public List<NoteInstance> activeNotes, willRemove;
+	public List<NoteInstance> willRemove;
+	public List<List<NoteInstance>> activeNotes;
+
 	public List<BarInstance> activeBars, willRemoveBars;
 	public Line nextLine;
 	public Animation2D[] flame;
@@ -58,12 +62,23 @@ public class Player : MonoBehaviour
 			star = _star;
 			//hammeron = _hammeron;
 			hammeron = true;
+			available = false;
+
+			shortSuccess = false;
+			longSuccess = false;
+
+			fail = false;
 		}
 		public NoteModel noteModel;
 		public uint timestamp;
 		public bool seen, star, hammeron;
 		public uint fred;
 		public uint duration;
+		public bool available;
+
+		public bool shortSuccess;
+		public bool longSuccess;
+		public bool fail;
 	}
 
 	[System.Serializable]
@@ -258,7 +273,12 @@ public class Player : MonoBehaviour
 				 */
 				noteInstance.Update(noteModel, nextNote.timestamp, nextNote.fred, nextNote.duration, nextNote.star, nextNote.hammerOn);
 				noteInstance.seen = false;
-				activeNotes.Add(noteInstance);
+
+				/**
+				 * fred에 맞게 List<NoteInstance> 를 넣어준다.
+				 */
+				List<Player.NoteInstance> list = activeNotes[System.Convert.ToInt32(noteInstance.fred)];
+				list.Add(noteInstance);
 
 				index.note++;
 				index.noteModel[poolNumber]++;
@@ -304,60 +324,63 @@ public class Player : MonoBehaviour
 			board.localPosition = boardPosition;
 		}
 
-		/**
+        /**
 		 * 노트를 이동 시킨다.
 		 */
-		for (int i = 0; i < activeNotes.Count; ++i)
-		{
-			NoteInstance noteInstance = activeNotes[i];
-			Transform noteTransform = noteInstance.noteModel.transform;
-			Vector3 pos = noteTransform.localPosition;
-
-			/**
-			 * 실제 도착해야할 tick 시간과 현재 tick시간을 계산하여
-			 * 거리 계산
-			 */
-			double tickDistance = noteInstance.timestamp - smoothTick;
-			double distanceInMeters = TickDistanceToMeters(tickDistance);
-
-			/**
-			 * 계산된 거리만큼 노트 이동
-			 */
-			pos.z = (float) distanceInMeters;
-			noteTransform.localPosition = pos;
-
-
-			/**
-			 * 긴 노트일 경우 길이를 계산하여 세팅
-			 */
-			double noteDistance = tickDistance;
-			double noteDistanceInMeters = TickDistanceToMeters(noteDistance);
-			double endOfNoteDistance = tickDistance + noteInstance.duration;
-			double endOfNoteInMeters = TickDistanceToMeters(endOfNoteDistance);
-			if (noteInstance.duration > 0)
+		for(int k=0; k<activeNotes.Count; k++)
+        {
+			for (int i = 0; i < activeNotes[k].Count; ++i)
 			{
-				//update long note length
-				float length = (float)(endOfNoteInMeters - distanceInMeters);
-				noteInstance.noteModel.SetLengt(length);
-			}
+				NoteInstance noteInstance = activeNotes[k][i];
+				Transform noteTransform = noteInstance.noteModel.transform;
+				Vector3 pos = noteTransform.localPosition;
 
-			/**
-			 * Hammer, Star, Normal에 따른 모양 변형
-			 */
-			SpriteRenderer spriteRenderer = noteInstance.noteModel.spriteRenderer;
-			NoteRenderer.FredSpriteData fredSpriteData = noteRenderer.spriteData.fred[noteInstance.fred];
-			if (noteInstance.star)
-			{
-				spriteRenderer.sprite = (noteInstance.hammeron) ? fredSpriteData.starHammerOn[frameIndex % 16] : fredSpriteData.star[frameIndex % 16];
-			}
-			else
-			{
-				spriteRenderer.sprite = (noteInstance.hammeron) ? fredSpriteData.hammerOn : fredSpriteData.normal;
-			}
+				/**
+				 * 실제 도착해야할 tick 시간과 현재 tick시간을 계산하여
+				 * 거리 계산
+				 */
+				double tickDistance = noteInstance.timestamp - smoothTick;
+				double distanceInMeters = TickDistanceToMeters(tickDistance);
 
-			if (endOfNoteInMeters < -1) //out of view
-			{
-				willRemove.Add(noteInstance);
+				/**
+				 * 계산된 거리만큼 노트 이동
+				 */
+				pos.z = (float)distanceInMeters;
+				noteTransform.localPosition = pos;
+
+
+				/**
+				 * 긴 노트일 경우 길이를 계산하여 세팅
+				 */
+				double noteDistance = tickDistance;
+				double noteDistanceInMeters = TickDistanceToMeters(noteDistance);
+				double endOfNoteDistance = tickDistance + noteInstance.duration;
+				double endOfNoteInMeters = TickDistanceToMeters(endOfNoteDistance);
+				if (noteInstance.duration > 0)
+				{
+					//update long note length
+					float length = (float)(endOfNoteInMeters - distanceInMeters);
+					noteInstance.noteModel.SetLengt(length);
+				}
+
+				/**
+				 * Hammer, Star, Normal에 따른 모양 변형
+				 */
+				SpriteRenderer spriteRenderer = noteInstance.noteModel.spriteRenderer;
+				NoteRenderer.FredSpriteData fredSpriteData = noteRenderer.spriteData.fred[noteInstance.fred];
+				if (noteInstance.star)
+				{
+					spriteRenderer.sprite = (noteInstance.hammeron) ? fredSpriteData.starHammerOn[frameIndex % 16] : fredSpriteData.star[frameIndex % 16];
+				}
+				else
+				{
+					spriteRenderer.sprite = (noteInstance.hammeron) ? fredSpriteData.hammerOn : fredSpriteData.normal;
+				}
+
+				if (endOfNoteInMeters < -1) //out of view
+				{
+					willRemove.Add(noteInstance);
+				}
 			}
 		}
 	}
@@ -422,24 +445,13 @@ public class Player : MonoBehaviour
 		}
 	}
 
-	public void RegisterAndRemoveCustom(double smoothTick)
-	{
-
-		
-	}
 	/**
-	 * 매 프레임 마다 들어옴
+	 * 매 프레임마다
+	 * 노트 이용 가능여부 및 사용자 입력 검사
+	 * 기준선에 맞게 입력하면 제거
 	 */
 	public void RegisterAndRemove(double smoothTick)
 	{
-		bool missedThisFrame = false;
-
-		//highlighting player input
-		//for (int i = 0; i < playerInput.fred.Length; ++i)
-		//{
-		//	fredHighlight[i].SetActive(playerInput.fred[i]);
-		//}
-
 		/**
 		 * HightLight 표시
 		 */
@@ -451,242 +463,169 @@ public class Player : MonoBehaviour
 		double window = resolution / 4;
 
 		/**
-		 * 가장 앞선 노트에 대해서 키보드를 press 했을 때 반응할 수 있는지에 대한 여부
+		 * 각 Fred별 ActiveNotes의 첫번째 NoteInstance가 판단선에 접근해서
+		 * 이용가능한지 여부를 조사한다.
+		 * 
 		 */
-		if (!nextLine.available)
-		{
-			//check if strum bar is hit while there is no new line. this breaks combo
-			if (playerInput.strumPressed)
+		for(int k=0; k<activeNotes.Count; k++)
+        {
+			List<Player.NoteInstance> fredActiveNotes = activeNotes[k];
+			if (fredActiveNotes.Count > 0 && (fredActiveNotes[0].timestamp <= (smoothTick + (window * 1.5))))
 			{
-				//noteCounter.number = 0;
-				//Debug.Log("Strummed without a new line being available");
-			}
-
-			/**
-			 * 타이밍 맞게 nextLine에 해당 노트를 넣어 둔다.
-			 */
-			if (activeNotes.Count > 0 && (activeNotes[0].timestamp <= (smoothTick + (window * 0.5))))
-			{
-				// nextLine에 노트 추가
-				nextLine.note.Add(activeNotes[0]);
-				nextLine.timestamp = activeNotes[0].timestamp;
-				nextLine.isHammerOn = activeNotes[0].hammeron;
-
-				//Debug.Log("Creating new line with timestamp "+nextLine.timestamp);
-
-				int i = 1;
-				/**
-				 * 같은 timestamp인 노트들은 더 추가한다.
-				 */
-				while (i < 5)
-				{
-					if (i >= activeNotes.Count)
-					{
-						//Debug.Log("No more active notes");
-						break; //out of range
-					}
-					if (activeNotes[i].timestamp != nextLine.timestamp)
-					{
-						//Debug.Log("active note "+i+" has a different timestamp of "+activeNotes[i].timestamp);
-						break; //different line
-					}
-					//Debug.Log("Adding one more note");
-					nextLine.note.Add(activeNotes[i]);
-					i++;
-				}
-
-				/**
-				 * nextLine에 어떤 fred를 칠 수 있는 상태인지 표시
-				 * 가장 낮은 fred 구하기
-				 */
-				nextLine.lowestFred = 5;
-				for (int j = 0; j < nextLine.note.Count; ++j)
-				{
-					uint fred = nextLine.note[j].fred;
-					nextLine.lowestFred = Mathf.Min(nextLine.lowestFred, (int)fred);
-					nextLine.fred[fred] = true;
-				}
-				nextLine.available = true;
-				//string debugNotes = "";
-				//for (int j = 0; j < nextLine.note.Count; ++j)
-				//{
-				//	debugNotes += nextLine.note[j].fred.ToString() + " ";
-				//}
-				//Debug.Log("Creating new line with notes "+ debugNotes);
-			}
-			else
-			{
-				//Debug.Log("No New Notes");
+				NoteInstance noteInstance = fredActiveNotes[0];
+				noteInstance.available = true;
 			}
 		}
 
 		/**
-		 * 노트를 칠 수 있을 때
+		 * 각 Fred별 ActiveNotes의 첫번째 NoteInstance가
+		 * 이용 가능하다면 사용자 입력이 눌렸는지 조사한다.
 		 */
-		if (nextLine.available)
+		for (int k = 0; k < activeNotes.Count; k++)
 		{
-			/**
-			 * 동시에 눌러야 되는 상황까지 포함하여 정확하게 눌렀는지 판단
-			 * 그런데 이부분은 가장 낮은 Fred부터 나머지 부분이 정확한지 판단함..
-			 * 그래서 Fred를 전부 동시에 누르고 있으면 마지막 부분의 노트만 내려올때 성공이됨...
-			 */
-			// 정확하게 눌렀는지 판단하기 위한 변수
-			//bool correctColors = true;
-			//for (int i = nextLine.lowestFred; i < playerInput.fred.Length; ++i)
-			//{
-			//	//Debug.Log("fred "+i+" "+playerInput.fred[i] + " needs to equal " + nextLine.fred[i]);
-			//	correctColors &= (playerInput.fred[i] == nextLine.fred[i]);
-			//}
-			bool correctColors = true;
-			for (int i=0; i < playerInput.fred.Length; ++i)
-			{
-				//Debug.Log("fred "+i+" "+playerInput.fred[i] + " needs to equal " + nextLine.fred[i]);
-				correctColors &= (playerInput.fred[i] == nextLine.fred[i]);
-			}
+			List<Player.NoteInstance> fredActiveNotes = activeNotes[k];
 
-			/**
-			 * 그래서 이렇게 변경함
-			 */
-			//bool correctColors = true;
-			//for (int i=0; i<nextLine.note.Count; i++)
-			//{
-			//	NoteInstance noteInstance = nextLine.note[i];
-			//	uint fred = noteInstance.fred;
-			//    if (nextLine.fred[fred] != playerInput.fred[fred])
-			//    {
-			//		correctColors = false;
-			//
-			//	}
-			//	//correctColors &= (playerInput.fred[i] == nextLine.note[i].fred);
-			//}
+			if(fredActiveNotes.Count > 0)
+            {
+				NoteInstance noteInstance = fredActiveNotes[0];
 
-
-
-			//Debug.Log("Holding correct colors " + correctColors);
-
-			//Check if strum has already been pressed, 
-			//if the colors are pressed on time afterwards it will register and exit here
-			//also check if hammerOn, then no strum will be necessary
-
-			// if ((nextLine.strumPressed || nextLine.isHammerOn) && correctColors)
-			// 아래 처럼 바꿈
-			if (correctColors)
-			{
-				nextLine.succes = true;
-				//Debug.Log("Pressed strum after holding correct colors");
-			}
-
-			/**
-			 * strumPress 기능은 뺐기 때문에
-			 * 주석처리
-			 */
-			//else
-			//{
-			//	//check for strum input
-			//	if (playerInput.strumPressed)
-			//	{
-			//		//Debug.Log("Strum Pressed");
-			//		//check if inside window
-			//		if (Mathf.Abs((float)(nextLine.timestamp - smoothTick)) <= window)
-			//		{
-			//			//Debug.Log("Inside of window! correct colors yet: " + correctColors);
-			//			//check if double strum pressed, this is a fail
-			//			if (nextLine.strumPressed) nextLine.fail = true;
-			//			nextLine.strumPressed = true;
-			//			if (correctColors && !nextLine.fail) nextLine.succes = true;
-			//		}
-			//		else
-			//		{
-			//			//strummed too early
-			//			//Debug.Log("Strummed too early");
-			//			//noteCounter.number = 0;
-			//		}
-			//	}
-			//	else
-			//	{
-			//		//Debug.Log("Strum not pressed");
-			//	}
-			//}
-
-			/**
-			 * 해당 nextLine이 넘어갔을 경우 fail처리
-			 */
-			if ((nextLine.timestamp - smoothTick) < -window)
-			{
-				nextLine.fail = true;
-				//Debug.Log("Too late. note: " + nextLine.timestamp + ". strum: " + smoothTick);
-				//Redo this function again when too late to see if the next set of notes is hit
-				//RegisterHits(smoothTick);
-			}
-
-			/**
-			 * nextLine이 fail일 경우
-			 */
-			if (nextLine.fail)
-			{
-				//Debug.Log("MISS");
-
-				/**
-				 * nextLine에 있는 노트 제거
-				 */
-				for (int i = 0; i < nextLine.note.Count; ++i)
+				if (noteInstance.available)
 				{
-					willRemove.Add(nextLine.note[i]);
+					uint fred = noteInstance.fred;
+
+					/**
+					 * 성공 여부 판단 하는 곳
+					 */
+					// Short 노트
+					if (noteInstance.duration < 1)
+					{
+						// 성공일 때
+						if (playerInput.fred[fred]) noteInstance.shortSuccess = true;
+					}
+					// Long 노트
+					else
+					{
+						// 진입 성공
+						if (playerInput.fred[fred] || !noteInstance.fail) { 
+							noteInstance.longSuccess = true;
+						}
+
+						if (noteInstance.longSuccess)
+                        {
+                            // 계속 꾹 버튼을 누르고 있지 않다면 실패 
+                            if (!playerInput.fredHighlight[fred])
+                            {
+								noteInstance.longSuccess = false;
+							}
+                        }
+					}
+
+					/**
+					 * 시간 초과 되면 실패
+					 */
+					if ((noteInstance.timestamp - smoothTick) < -window)
+					{
+						noteInstance.fail = true;
+					}
+
+					/**
+					 * 노트 시간초과로 실패했을 때
+					 */
+					if (noteInstance.fail)
+					{
+						// Short만 삭제
+						if(noteInstance.duration == 0)
+                        {
+							willRemove.Add(noteInstance);
+						}
+						lastNoteHit = false;
+					}
+
+					/**
+					 * Short 성공 후처리
+					 */
+					if (noteInstance.shortSuccess && !noteInstance.fail)
+					{
+						//Debug.Log("HIT");
+						/**
+						 * 노트삭제
+						 * 맞췄을떄 Effect 처리
+						 */
+						noteInstance.shortSuccess = false;
+						willRemove.Add(noteInstance);
+
+						uint fred2 = noteInstance.fred;
+						flame[fred2].gameObject.SetActive(true);
+						flame[fred2].Reset();
+						flame[fred2].seconds = (1f / 60f * 8f);
+						noteCounter.number++;
+						lastNoteHit = true;
+					}
+
+					/**
+					 * Long 성공 후처리
+					 */
+					if (noteInstance.longSuccess)
+					{
+						//Debug.Log("HIT");
+						//willRemove.Add(noteInstance);
+						//double distanceInMeters = TickDistanceToMeters(smoothTick);
+						//if ((distanceInMeters % 1) == 0)
+						//{
+						//	Debug.Log("들어옴");
+						//}
+
+						uint fred2 = noteInstance.fred;
+						flame[fred2].gameObject.SetActive(true);
+						flame[fred2].Reset();
+						flame[fred2].seconds = (1f / 60f * 8f);
+						noteCounter.number++;
+						lastNoteHit = true;
+					}
+
+                    /**
+					 * Long 꼬리 길이 전부 지나면 삭제
+					 */
+                    if (noteInstance.duration > 0)
+                    {
+						if (smoothTick >= noteInstance.timestamp + noteInstance.duration)
+						{
+							noteInstance.longSuccess = false;
+							willRemove.Add(noteInstance);
+						}
+					}
 				}
-
-				/**
-				 * nextLine 클리어
-				 */
-				nextLine.Clear();
-
-				//noteCounter.number = 0;
-
-				lastNoteHit = false;
-				missedThisFrame = true;
 			}
-
-			/**
-			 * 성공했을 경우
-			 */
-			if (nextLine.succes && !nextLine.fail)
-			{
-				//Debug.Log("HIT");
-				/**
-				 * nextLine 노트 삭제
-				 * 맞췄을떄 Effect 처리
-				 */
-				for (int i = 0; i < nextLine.note.Count; ++i)
-				{
-					willRemove.Add(nextLine.note[i]);
-					uint fred = nextLine.note[i].fred;
-					flame[fred].gameObject.SetActive(true);
-					flame[fred].Reset();
-					flame[fred].seconds = (1f / 60f * 8f);
-				}
-				nextLine.Clear();
-				noteCounter.number++;
-				lastNoteHit = true;
-			}
+			
 		}
 
 		/**
-		 * 활성 노트에서 해당 노트를 삭제
-		 * willRemove에 있는 모든 노트 삭제
-		 * noteModel 비활성화
+		 * 제거 활동
 		 */
 		for (int i = willRemove.Count - 1; i > -1; --i)
 		{
-			activeNotes.Remove(willRemove[i]);
+			/**
+			 * 활성 노트 리스트에서 제거
+			 */
+			for (int k = 0; k < activeNotes.Count; k++)
+			{
+				List<Player.NoteInstance> list = activeNotes[k];
+				list.Remove(willRemove[i]);
+
+			}
+
+			/**
+			 * 헤당 모델 자체 비활성화 설정
+			 */
 			willRemove[i].noteModel.transform.gameObject.SetActive(false);
+
+			/**
+			 * WillRemove 리스트에서 제거
+			 */
 			willRemove.RemoveAt(i);
 		}
 
-		//update note counter
-		//noteCounter.gameObject.SetActive(noteCounter.number > 30);
 		noteCounter.UpdateCounter();
-
-		//if missed a note, do function again to check if next note is hit instead. but break combo
-		if (missedThisFrame) RegisterAndRemove(smoothTick);
 	}
 
 	public double TickDistanceToMeters(double tickDistance)

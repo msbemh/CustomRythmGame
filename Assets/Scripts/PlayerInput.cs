@@ -34,11 +34,11 @@ public class PlayerInput
 		//fred[4] = XInput.GetButton(deviceId, XInput.Button.LB);
 		//startPressed = XInput.GetButtonDown(deviceId, XInput.Button.Start);
 
-		fred[0] = Input.GetKey(KeyCode.D);
-		fred[1] = Input.GetKey(KeyCode.F);
-		fred[2] = Input.GetKey(KeyCode.Space);
-		fred[3] = Input.GetKey(KeyCode.J);
-		fred[4] = Input.GetKey(KeyCode.K);
+		fred[0] = Input.GetKeyDown(KeyCode.D);
+		fred[1] = Input.GetKeyDown(KeyCode.F);
+		fred[2] = Input.GetKeyDown(KeyCode.Space);
+		fred[3] = Input.GetKeyDown(KeyCode.J);
+		fred[4] = Input.GetKeyDown(KeyCode.K);
 
 		fredHighlight[0] = Input.GetKey(KeyCode.D);
 		fredHighlight[1] = Input.GetKey(KeyCode.F);

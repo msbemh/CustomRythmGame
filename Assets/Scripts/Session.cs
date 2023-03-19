@@ -189,7 +189,13 @@ public class Session : MonoBehaviour
 			/**
 			 * 활성화/비활성화 노트와 바를 관리해주는 변수
 			 */
-			players[i].activeNotes = new List<Player.NoteInstance>();
+			players[i].activeNotes = new List<List<Player.NoteInstance>>();
+			for(int k=0; k<5; k++)
+            {
+				players[i].activeNotes.Add(new List<Player.NoteInstance>());
+
+			}
+
 			players[i].willRemove = new List<Player.NoteInstance>();
 			players[i].activeBars = new List<BarInstance>();
 			players[i].willRemoveBars = new List<BarInstance>();
