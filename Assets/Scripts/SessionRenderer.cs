@@ -24,19 +24,21 @@ public class SessionRenderer : MonoBehaviour
 			outputs[i].GetComponent<RawImage>().texture = textures[i];
 		}
 
-		RectTransform myRect = (RectTransform)transform;
-		Vector2 groupSizeDelta = group.sizeDelta;
-
-		groupSizeDelta.x = myRect.sizeDelta.x;
-		groupSizeDelta.y = myRect.sizeDelta.x / textures.Length;
 		/**
-		 * Group 사이즈 보다 outPut 사이즈가 크다면
-		 * Group 사이즈를 높인다. 
+		 * Canvas => Group을 변경하는 곳이긴 한데...
+		 * 화면이 틀어져서 일단 삭제...
+		 * 정확히 무엇을 뜻하는지는 잘 모르겠다...
 		 */
-		if (groupSizeDelta.y > myRect.sizeDelta.y)
-		{
-			groupSizeDelta *= myRect.sizeDelta.y / groupSizeDelta.y;
-		}
-		group.sizeDelta = groupSizeDelta;
+		//RectTransform myRect = (RectTransform) transform;
+		//Vector2 groupSizeDelta = group.sizeDelta;
+		//
+		//groupSizeDelta.x = myRect.sizeDelta.x;
+		//groupSizeDelta.y = myRect.sizeDelta.x / textures.Length;
+
+		//if (groupSizeDelta.y > myRect.sizeDelta.y)
+		//{
+		//	groupSizeDelta *= myRect.sizeDelta.y / groupSizeDelta.y;
+		//}
+		//group.sizeDelta = groupSizeDelta;
 	}
 }

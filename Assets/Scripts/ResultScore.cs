@@ -10,16 +10,11 @@ public class ResultScore : MonoBehaviour
     [SerializeField] Text textScore = null;
     [SerializeField] Text textMaxScore = null;
 
-    NoteCounter noteCounter;
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        noteCounter = FindObjectOfType<NoteCounter>();
-    }
+    public Session session;
 
     public void ShowResult()
     {
+        NoteCounter noteCounter = session.players[0].noteCounter;
         goUI.SetActive(true);
         for (int i = 0; i < textCount.Length; i++)
             textCount[i].text = noteCounter.miss + "";

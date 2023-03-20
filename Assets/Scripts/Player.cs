@@ -160,15 +160,18 @@ public class Player : MonoBehaviour
 		noteCounter.Initialize();
 
 		output = new RenderTexture(Mathf.CeilToInt(_output.x), Mathf.CeilToInt(_output.y), 16, RenderTextureFormat.ARGB32);
-		cam.GetComponent<Camera>().targetTexture = output;
+		//cam.GetComponent<Camera>().targetTexture = output;
 		/**
 		 * Culling Mask는 카메라가 렌더링할 레이어를 선택하는데 사용됩니다.
 		 * 레이어를 사용하여 게임 오브젝트를 분류하고, 레이어마다 다른 물리적 특성을 부여하고,
 		 * 다른 카메라에서 다른 게임 오브젝트를 렌더링하도록 할 때 유용합니다.
 		 */
-		cam.GetComponent<Camera>().cullingMask = layerMask;
+		//cam.GetComponent<Camera>().cullingMask = layerMask;
 
-		SetLayerRecursive(transform, 10 + playerNumber);
+		/**
+		 * Player clone 아래 모든 GameObject Layer 세팅
+		 */
+		//SetLayerRecursive(transform, 10 + playerNumber);
 
 		playerInput = new PlayerInput(PlayerInput.Device.Xinput, playerNumber);
 
@@ -668,8 +671,8 @@ public class Player : MonoBehaviour
 		 * 최대 콤보 업데이트
 		 */
 		noteCounter.maxComboCount = Mathf.Max(noteCounter.comboCount, noteCounter.maxComboCount);
-		Debug.Log("noteCounter.maxComboCount:" + noteCounter.maxComboCount);
-		Debug.Log("noteCounter.comboCount:" + noteCounter.comboCount);
+		//Debug.Log("noteCounter.maxComboCount:" + noteCounter.maxComboCount);
+		//Debug.Log("noteCounter.comboCount:" + noteCounter.comboCount);
 
 		/**
 		 * Miss일때
@@ -679,7 +682,7 @@ public class Player : MonoBehaviour
 			noteCounter.miss++;
 			noteCounter.comboCount = 0;
 			JudgeText.instance.resetAnim("Miss", "red"); // 이펙트
-			Debug.Log("noteCounter.miss:" + noteCounter.miss);
+			//Debug.Log("noteCounter.miss:" + noteCounter.miss);
 			return;
 		}
 
@@ -708,14 +711,14 @@ public class Player : MonoBehaviour
 			noteCounter.perfect++;
 			noteCounter.score = noteCounter.score + 2;
 			JudgeText.instance.resetAnim(judgeStr); // 이펙트
-			Debug.Log("noteCounter.perfect:" + noteCounter.perfect);
+			//Debug.Log("noteCounter.perfect:" + noteCounter.perfect);
 		}
 		else if ("Good".Equals(judgeStr))
 		{
 			noteCounter.good++;
 			noteCounter.score++;
 			JudgeText.instance.resetAnim(judgeStr); // 이펙트
-			Debug.Log("noteCounter.good:" + noteCounter.good);
+			//Debug.Log("noteCounter.good:" + noteCounter.good);
 		}
 
 		noteCounter.comboCount++;

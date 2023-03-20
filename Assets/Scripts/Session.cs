@@ -27,8 +27,8 @@ public class Session : MonoBehaviour
 	public double bpm, smoothBpm;
 	public float RenderingFadeDistance = 3;
 	public float RenderingFadeAmount = 1;
-	public GameObject songSelect;
-
+	public SongSelect songSelect;
+	
 	public ResultScore resultScore;
 
 	public class PlayerInfo
@@ -237,18 +237,6 @@ public class Session : MonoBehaviour
 		smoothing = null;
 		playing = false;
 
-		/**
-		 * Pool Game Object 찾아서 삭제
-		 */
-		//foreach (Transform child in transform)
-		//{
-		//	if (child.name.ToLower().Contains("pool"))
-		//	{
-		//		Destroy(child.gameObject);
-		//	}
-		//}
-
-
 		// Frame Index 초기화
 		frameIndex = 0;
 
@@ -313,6 +301,7 @@ public class Session : MonoBehaviour
             {
 				playing = false;
 				resultScore.ShowResult();
+				songSelect.EndingSong();
 			}
 
 			// 노래 진행중이라면 작업

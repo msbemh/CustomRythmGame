@@ -197,6 +197,7 @@ public class SongSelect : MonoBehaviour
 
 	public IEnumerator EndingSong()
 	{
+
 		/**
 		 * fade 투명한것으로 활성화
 		 */
@@ -204,23 +205,23 @@ public class SongSelect : MonoBehaviour
 		fade.gameObject.SetActive(true);
 
 		/**
-		 * 1Frame당 조금씩 불투명으로 변경
+		 * 불투명하게 변경
 		 */
-		while (fade.color.a < 1)
+		while (fade.color.a < 0.5)
 		{
 			fade.color += new Color(0, 0, 0, Time.deltaTime);
 			yield return null;
 		}
 
 		/**
-		 * Session종료
-		 */
-		session.EndSession();
-
-		/**
 		 * 결과창
 		 */
 		resultScore.ShowResult();
+
+		/**
+		 * Session종료
+		 */
+		session.EndSession();
 
 		/**
 		 * 노래 선택창 활성화
@@ -230,11 +231,11 @@ public class SongSelect : MonoBehaviour
 		/**
 		 * fade를 다시 투명화 시키기
 		 */
-		while (fade.color.a > 0)
-		{
-			fade.color -= new Color(0, 0, 0, Time.deltaTime);
-			yield return null;
-		}
-		fade.gameObject.SetActive(false);
+		//while (fade.color.a > 0)
+		//{
+		//	fade.color -= new Color(0, 0, 0, Time.deltaTime);
+		//	yield return null;
+		//}
+		//fade.gameObject.SetActive(false);
 	}
 }
