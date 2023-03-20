@@ -10,10 +10,11 @@ public class SongSelect : MonoBehaviour
 	public List<ScanSong.SongInfo> songs;
 	public SongBlock songblockPrefab;
 	public GameObject selectScreen;
+	public ResultScore resultScore;
 	/**
 	 * Texture를 사용하여 이미지를 표시 합니다.
 	 */
-    public RawImage fade;
+	public RawImage fade;
 	public void Awake()
 	{
 
@@ -194,17 +195,41 @@ public class SongSelect : MonoBehaviour
 		
 	}
 
-	private IEnumerator EndingSong()
+	public IEnumerator EndingSong()
 	{
+		/**
+		 * fade 투명한것으로 활성화
+		 */
 		fade.color = new Color(0, 0, 0, 0);
 		fade.gameObject.SetActive(true);
+
+		/**
+		 * 1Frame당 조금씩 불투명으로 변경
+		 */
 		while (fade.color.a < 1)
 		{
 			fade.color += new Color(0, 0, 0, Time.deltaTime);
 			yield return null;
 		}
+
+		/**
+		 * Session종료
+		 */
 		session.EndSession();
-		selectScreen.SetActive(true);
+
+		/**
+		 * 결과창
+		 */
+		resultScore.ShowResult();
+
+		/**
+		 * 노래 선택창 활성화
+		 */
+		//selectScreen.SetActive(true);
+
+		/**
+		 * fade를 다시 투명화 시키기
+		 */
 		while (fade.color.a > 0)
 		{
 			fade.color -= new Color(0, 0, 0, Time.deltaTime);

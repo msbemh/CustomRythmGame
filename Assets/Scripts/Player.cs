@@ -29,6 +29,7 @@ public class Player : MonoBehaviour
 	public uint nextBar;
 	public bool lastNoteHit = true; //mute guitar track?
 
+	private float time;
 
 	[System.Serializable]
 	public class Pool
@@ -68,6 +69,7 @@ public class Player : MonoBehaviour
 			longSuccess = false;
 
 			fail = false;
+			longFail = false;
 		}
 		public NoteModel noteModel;
 		public uint timestamp;
@@ -79,6 +81,7 @@ public class Player : MonoBehaviour
 		public bool shortSuccess;
 		public bool longSuccess;
 		public bool fail;
+		public bool longFail;
 	}
 
 	[System.Serializable]
@@ -309,6 +312,12 @@ public class Player : MonoBehaviour
 		cam.gameObject.SetActive(false);
 		pool = null;
 		index = null;
+
+		/**
+		 * Count 초기화
+		 */
+		noteCounter.clear();
+
 		Destroy(gameObject);
 	}
 
@@ -506,7 +515,7 @@ public class Player : MonoBehaviour
 					else
 					{
 						// 진입 성공
-						if (playerInput.fred[fred] || !noteInstance.fail) { 
+						if (playerInput.fred[fred] && !noteInstance.fail) { 
 							noteInstance.longSuccess = true;
 						}
 
@@ -525,7 +534,25 @@ public class Player : MonoBehaviour
 					 */
 					if ((noteInstance.timestamp - smoothTick) < -window)
 					{
+						// long일때
+						if (noteInstance.duration > 0)
+                        {
+                            if (!noteInstance.longSuccess && !noteInstance.longFail)
+                            {
+								// 판정처리
+								judgmentProcessing(noteInstance, smoothTick, true, "Miss");
+							}
+						// short일때
+						}
+                        else
+                        {
+							// 판정처리
+							judgmentProcessing(noteInstance, smoothTick, false, "Miss");
+
+							
+						}
 						noteInstance.fail = true;
+						noteInstance.longFail = true;
 					}
 
 					/**
@@ -547,6 +574,10 @@ public class Player : MonoBehaviour
 					if (noteInstance.shortSuccess && !noteInstance.fail)
 					{
 						//Debug.Log("HIT");
+
+						// 판정처리
+						judgmentProcessing(noteInstance, smoothTick);
+
 						/**
 						 * 노트삭제
 						 * 맞췄을떄 Effect 처리
@@ -558,7 +589,7 @@ public class Player : MonoBehaviour
 						flame[fred2].gameObject.SetActive(true);
 						flame[fred2].Reset();
 						flame[fred2].seconds = (1f / 60f * 8f);
-						noteCounter.number++;
+						noteCounter.score++;
 						lastNoteHit = true;
 					}
 
@@ -568,19 +599,22 @@ public class Player : MonoBehaviour
 					if (noteInstance.longSuccess)
 					{
 						//Debug.Log("HIT");
-						//willRemove.Add(noteInstance);
-						//double distanceInMeters = TickDistanceToMeters(smoothTick);
-						//if ((distanceInMeters % 1) == 0)
-						//{
-						//	Debug.Log("들어옴");
-						//}
+						time += Time.deltaTime;
+                        if (time >= 0.05)
+                        {
+							// 판정처리
+							judgmentProcessing(noteInstance, smoothTick, true);
 
-						uint fred2 = noteInstance.fred;
-						flame[fred2].gameObject.SetActive(true);
-						flame[fred2].Reset();
-						flame[fred2].seconds = (1f / 60f * 8f);
-						noteCounter.number++;
-						lastNoteHit = true;
+							time = 0;
+
+							uint fred2 = noteInstance.fred;
+							flame[fred2].gameObject.SetActive(true);
+							flame[fred2].Reset();
+							flame[fred2].seconds = (1f / 60f * 8f);
+							noteCounter.score++;
+							lastNoteHit = true;
+						}
+						
 					}
 
                     /**
@@ -627,6 +661,81 @@ public class Player : MonoBehaviour
 
 		noteCounter.UpdateCounter();
 	}
+
+	private void judgmentProcessing(NoteInstance noteInstance, double smoothTick, bool isLong = false, string judgeStr = "")
+    {
+		/**
+		 * 최대 콤보 업데이트
+		 */
+		noteCounter.maxComboCount = Mathf.Max(noteCounter.comboCount, noteCounter.maxComboCount);
+		Debug.Log("noteCounter.maxComboCount:" + noteCounter.maxComboCount);
+		Debug.Log("noteCounter.comboCount:" + noteCounter.comboCount);
+
+		/**
+		 * Miss일때
+		 */
+		if ("Miss".Equals(judgeStr))
+        {
+			noteCounter.miss++;
+			noteCounter.comboCount = 0;
+			JudgeText.instance.resetAnim("Miss", "red"); // 이펙트
+			Debug.Log("noteCounter.miss:" + noteCounter.miss);
+			return;
+		}
+
+		/**
+		 * Long은 ... 그냥 Good 없이.. 무조건 Perfect... 나중에 필요하면 수정
+		 * Short는 거리를 계산해서 Good or Perfect로 하자
+		 */
+		if (isLong)
+		{
+			judgeStr = "Perfect";
+		}
+		else
+		{
+			/**
+			 * 적당한 거리마다 Good인지 Perfect인지 판단
+			 */
+			double differenceDistance = TickDistanceToMeters(noteInstance.timestamp - smoothTick);
+			judgeStr = getJudgeStr(differenceDistance);
+		}
+
+		/**
+		 * 점수 계산
+		 */
+		if ("Perfect".Equals(judgeStr))
+		{
+			noteCounter.perfect++;
+			noteCounter.score = noteCounter.score + 2;
+			JudgeText.instance.resetAnim(judgeStr); // 이펙트
+			Debug.Log("noteCounter.perfect:" + noteCounter.perfect);
+		}
+		else if ("Good".Equals(judgeStr))
+		{
+			noteCounter.good++;
+			noteCounter.score++;
+			JudgeText.instance.resetAnim(judgeStr); // 이펙트
+			Debug.Log("noteCounter.good:" + noteCounter.good);
+		}
+
+		noteCounter.comboCount++;
+
+	}
+
+	private string getJudgeStr(double distance)
+    {
+		//Debug.Log("distance:" + distance);
+		if (distance <= 0.15 && distance >= -0.15)
+        {
+			//Debug.Log("Perfect");
+			return "Perfect";
+        }
+        else
+        {
+			//Debug.Log("Good");
+			return "Good";
+		}
+    }
 
 	public double TickDistanceToMeters(double tickDistance)
 	{

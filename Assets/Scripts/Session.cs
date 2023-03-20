@@ -27,6 +27,9 @@ public class Session : MonoBehaviour
 	public double bpm, smoothBpm;
 	public float RenderingFadeDistance = 3;
 	public float RenderingFadeAmount = 1;
+	public GameObject songSelect;
+
+	public ResultScore resultScore;
 
 	public class PlayerInfo
 	{
@@ -61,6 +64,13 @@ public class Session : MonoBehaviour
 		guitarSource.clip = song.audio.guitar;
 		rhythmSource.clip = song.audio.rhythm;
 		songSource.clip = song.audio.song;
+
+		/**
+		 * 무한 재생 끄기
+		 */
+		guitarSource.loop = false;
+		rhythmSource.loop = false;
+		songSource.loop = false;
 
 		/**
 		 * Unity 엔진에서 모든 쉐이더에서 사용할 수 있는 전역 변수를 설정
@@ -226,15 +236,25 @@ public class Session : MonoBehaviour
 		song = null;
 		smoothing = null;
 		playing = false;
-		foreach (Transform child in transform)
-		{
-			if (child.name.ToLower().Contains("pool"))
-			{
-				Destroy(child.gameObject);
-			}
-		}
+
+		/**
+		 * Pool Game Object 찾아서 삭제
+		 */
+		//foreach (Transform child in transform)
+		//{
+		//	if (child.name.ToLower().Contains("pool"))
+		//	{
+		//		Destroy(child.gameObject);
+		//	}
+		//}
+
+
+		// Frame Index 초기화
 		frameIndex = 0;
-		//noteInstancePool = null;
+
+		/**
+		 * 노래 소스와 Clip 삭제
+		 */
 		Destroy(guitarSource.clip);
 		Destroy(rhythmSource.clip);
 		Destroy(songSource.clip);
@@ -242,16 +262,29 @@ public class Session : MonoBehaviour
 		Destroy(rhythmSource);
 		Destroy(songSource);
 		guitarSource = rhythmSource = songSource = null;
+
+		/**
+		 * 시간 bpm tick 정보들 초기화
+		 */
 		time = previousTime = 0;
 		tick = 0;
 		smoothTick = 0;
 		starPowerDuration = 0;
 		bpm = smoothBpm = 0;
 		syncIndex = 0;
+
+		/**
+		 * Player 초기화
+		 *  - Camera 비활성화
+		 *  - Pool 삭제
+		 *  - Count 초기화
+		 *  - 변수 초기화
+		 */
 		for (int i = 0; i < players.Length; ++i)
 		{
 			players[i].Dispose();
 		}
+
 		System.GC.Collect();
 	}
 
@@ -270,82 +303,95 @@ public class Session : MonoBehaviour
 
 	void Update()
 	{
-		/**
+        /**
 		 * 음악이 playing 중일때
 		 */
-		if (songSource != null && songSource.isPlaying)
-		{
-			/**
-			 * 주기적으로
-			 * 사용자의 Input을 가져온다.
-			 */
-			for (int i = 0; i < players.Length; ++i)
-			{
-				players[i].GetInput();
+        if (songSource != null && songSource.clip != null)
+        {
+			// 노래 end 체크
+            if (songSource.time >= songSource.clip.length)
+            {
+				playing = false;
+				resultScore.ShowResult();
 			}
 
-			/**
-			 * frame index 증가
-			 */
-			frameIndex++;
-
-			/**
-			 * Audio Source 현재 재생 시간 (msec)
-			 */
-			time = (songSource.time * 1000f);
-
-			/**
-			 * 1Frame당 음악 재생 걸린 시간 (msec)
-			 */
-			float millisecondsPassed = time - previousTime;
-
-			rhythmSource.time = songSource.time;
-			guitarSource.time = songSource.time;
-
-			/**
-			 * 현재 재생된 tick에 맞는 BPM으로 업데이트
-			 * 최소 1번은 업데이트 된다.
-			 * 중간에 BPM이 바뀌면 이곳에서 바뀌게 됨
-			 * 프레임마다 틱이 증가
-			 */
-			Sync(millisecondsPassed);
-
-			/**
-			 * BPM이 바뀔때 부드럽게 바뀌게 위한 조치
-			 */
-			smoothBpm = smoothing.SmoothBPM(bpm);
-			/**
-			 * 틱이 오를때 부드럽게 오르게 하기 위한 조치
-			 */
-			smoothTick = smoothing.SmoothTick(tick, song.data.info.resolution);
-
-			bool playGuitarMusic = false;
-			for (int i = 0; i < players.Length; ++i)
+			// 노래 진행중이라면 작업
+			if (songSource.isPlaying)
 			{
-				players[i].SpawnObjects(tick, beatsPerSecond);
-				players[i].UpdateObjects(smoothTick, noteRenderer, frameIndex);
-				players[i].CreateBar(tick);
-				players[i].UpdateActiveBars(smoothTick);
-				players[i].RegisterAndRemove(smoothTick);
-				playGuitarMusic |= players[i].lastNoteHit;
-			}
-			guitarSource.volume = playGuitarMusic ? 1 : 0;
+				/**
+				 * 주기적으로
+				 * 사용자의 Input을 가져온다.
+				 */
+				for (int i = 0; i < players.Length; ++i)
+				{
+					players[i].GetInput();
+				}
 
-			previousTime = time;
-		}
-		/**
-		 * 음악이 아직 playing 되지 않았을때
-		 * 음악 play
-		 */
-		else
-		{
-			if (playing)
-			{
-				guitarSource.Play();
-				rhythmSource.Play();
-				songSource.Play();
+				/**
+				 * frame index 증가
+				 */
+				frameIndex++;
+
+				/**
+				 * Audio Source 현재 재생 시간 (msec)
+				 */
+				time = (songSource.time * 1000f);
+
+				/**
+				 * 1Frame당 음악 재생 걸린 시간 (msec)
+				 */
+				float millisecondsPassed = time - previousTime;
+
+				rhythmSource.time = songSource.time;
+				guitarSource.time = songSource.time;
+
+				/**
+				 * 현재 재생된 tick에 맞는 BPM으로 업데이트
+				 * 최소 1번은 업데이트 된다.
+				 * 중간에 BPM이 바뀌면 이곳에서 바뀌게 됨
+				 * 프레임마다 틱이 증가
+				 */
+				Sync(millisecondsPassed);
+
+				/**
+				 * BPM이 바뀔때 부드럽게 바뀌게 위한 조치
+				 */
+				smoothBpm = smoothing.SmoothBPM(bpm);
+				/**
+				 * 틱이 오를때 부드럽게 오르게 하기 위한 조치
+				 */
+				smoothTick = smoothing.SmoothTick(tick, song.data.info.resolution);
+
+				bool playGuitarMusic = false;
+				for (int i = 0; i < players.Length; ++i)
+				{
+					players[i].SpawnObjects(tick, beatsPerSecond);
+					players[i].UpdateObjects(smoothTick, noteRenderer, frameIndex);
+					players[i].CreateBar(tick);
+					players[i].UpdateActiveBars(smoothTick);
+					players[i].RegisterAndRemove(smoothTick);
+					playGuitarMusic |= players[i].lastNoteHit;
+				}
+				guitarSource.volume = playGuitarMusic ? 1 : 0;
+
+				previousTime = time;
 			}
-		}
+			/**
+			 * 음악이 아직 playing 되지 않았을때
+			 * 음악 play
+			 */
+			else
+			{
+				// 노래 시작
+				if (playing)
+				{
+					guitarSource.Play();
+					rhythmSource.Play();
+					songSource.Play();
+				}
+			}
+
+        }
 	}
 
 	private double beatsPerSecond, secondsPassed, beatsPassed, ticksPassed;
