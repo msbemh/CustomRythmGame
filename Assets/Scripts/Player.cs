@@ -592,7 +592,6 @@ public class Player : MonoBehaviour
 						flame[fred2].gameObject.SetActive(true);
 						flame[fred2].Reset();
 						flame[fred2].seconds = (1f / 60f * 8f);
-						noteCounter.score++;
 						lastNoteHit = true;
 					}
 
@@ -614,7 +613,6 @@ public class Player : MonoBehaviour
 							flame[fred2].gameObject.SetActive(true);
 							flame[fred2].Reset();
 							flame[fred2].seconds = (1f / 60f * 8f);
-							noteCounter.score++;
 							lastNoteHit = true;
 						}
 						

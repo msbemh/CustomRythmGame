@@ -71,6 +71,8 @@ public class SongSelect : MonoBehaviour
 		}
 	}
 
+	
+
 	private IEnumerator FadeOutStart()
 	{
 		/**
@@ -85,6 +87,17 @@ public class SongSelect : MonoBehaviour
 			fade.color -= new Color(0, 0, 0, Time.deltaTime);
 		}
 		fade.gameObject.SetActive(false);
+	}
+
+	private IEnumerator FadeInStart()
+	{
+		while (fade.color.a < 1)
+		{
+			// 다음 프레임 동작 되기 전까지 대기
+			yield return null;
+			fade.color += new Color(0, 0, 0, Time.deltaTime);
+		}
+		fade.gameObject.SetActive(true);
 	}
 
 	private void Update()
@@ -207,7 +220,7 @@ public class SongSelect : MonoBehaviour
 		/**
 		 * 불투명하게 변경
 		 */
-		while (fade.color.a < 0.5)
+		while (fade.color.a < 1)
 		{
 			fade.color += new Color(0, 0, 0, Time.deltaTime);
 			yield return null;
@@ -237,5 +250,24 @@ public class SongSelect : MonoBehaviour
 		//	yield return null;
 		//}
 		//fade.gameObject.SetActive(false);
+	}
+	public void activateScreen()
+	{
+		// 화면 활성화
+		selectScreen.SetActive(true);
+		/**
+		 * 점점 투명하게
+		 */
+		StartCoroutine(FadeOutStart());
+	}
+
+	public void inActivateScreen()
+	{
+		// 화면 활성화
+		selectScreen.SetActive(false);
+		/**
+		 * 점점 투명하게
+		 */
+		StartCoroutine(FadeInStart());
 	}
 }

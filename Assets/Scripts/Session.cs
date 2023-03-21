@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.IO;
 
 public class Session : MonoBehaviour
 {
@@ -30,6 +31,8 @@ public class Session : MonoBehaviour
 	public SongSelect songSelect;
 	
 	public ResultScore resultScore;
+
+	public static SongBlock songBlock;
 
 	public class PlayerInfo
 	{
@@ -272,6 +275,13 @@ public class Session : MonoBehaviour
 		{
 			players[i].Dispose();
 		}
+
+		/**
+		 * output 화면 초기화
+		 */
+		sessionRenderer.clear();
+		
+		
 
 		System.GC.Collect();
 	}

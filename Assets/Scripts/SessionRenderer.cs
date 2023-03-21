@@ -41,4 +41,11 @@ public class SessionRenderer : MonoBehaviour
 		//}
 		//group.sizeDelta = groupSizeDelta;
 	}
+	public void clear()
+    {
+		for (int i = 0; i < outputs.Length; ++i)
+		{
+			outputs[i].gameObject.SetActive(false);
+		}
+	}
 }

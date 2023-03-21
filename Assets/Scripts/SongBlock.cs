@@ -10,5 +10,8 @@ public class SongBlock : MonoBehaviour
 	{
 		Debug.Log("Play 시작");
 		songSelect.LoadSong(fileInfo);
+
+		// 다시시작을 위해서 저장
+		Session.songBlock = this;
 	}
 }
