@@ -246,12 +246,12 @@ public class Session : MonoBehaviour
 		/**
 		 * 노래 소스와 Clip 삭제
 		 */
-		Destroy(guitarSource.clip);
-		Destroy(rhythmSource.clip);
-		Destroy(songSource.clip);
-		Destroy(guitarSource);
-		Destroy(rhythmSource);
-		Destroy(songSource);
+		if(guitarSource && guitarSource.clip != null) Destroy(guitarSource.clip);
+		if (rhythmSource && rhythmSource.clip != null) Destroy(rhythmSource.clip);
+		if (songSource && songSource.clip != null) Destroy(songSource.clip);
+		if (guitarSource != null) Destroy(guitarSource);
+		if (rhythmSource != null) Destroy(rhythmSource);
+		if (songSource != null) Destroy(songSource);
 		guitarSource = rhythmSource = songSource = null;
 
 		/**
@@ -310,8 +310,7 @@ public class Session : MonoBehaviour
             if (songSource.time >= songSource.clip.length)
             {
 				playing = false;
-				resultScore.ShowResult();
-				songSelect.EndingSong();
+				StartCoroutine(songSelect.EndingSong());
 			}
 
 			// 노래 진행중이라면 작업

@@ -56,15 +56,15 @@ public class SongLoader : MonoBehaviour
 		 * chart파일에서 필요한 정보들
 		 * parsing해서 가져오기
 		 */
-		Thread thread = new Thread(Parse);
-		thread.IsBackground = true;
+		//Thread thread = new Thread(Parse);
+		//thread.IsBackground = true;
 
 		yield return null;
 
 		// Parsing 시작
-		thread.Start();
+		//thread.Start();
 
-		//Parse();
+		Parse();
 
 		/**
 		 * Parsing이 완료되기 전까지 대기

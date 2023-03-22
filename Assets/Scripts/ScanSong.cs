@@ -6,6 +6,8 @@ using System.Threading;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 
+using UnityEngine.Networking;
+
 public class ScanSong : MonoBehaviour
 {
     public static List<SongInfo> allSongs;
@@ -32,11 +34,13 @@ public class ScanSong : MonoBehaviour
 
     void Start()
     {
+
+		Debug.Log("[TEST]" + Application.persistentDataPath);
 		/**
 		 * 애플리케이션의 백그라운드 로딩 우선 순위를 낮추어서
 		 * 메인 스레드가 중요한 작업을 작업하는데 지장이 없도록 합니다.
 		 */
-        Application.backgroundLoadingPriority = UnityEngine.ThreadPriority.Low;
+		Application.backgroundLoadingPriority = UnityEngine.ThreadPriority.Low;
 
 		/**
 		 * delegate(){} 형식의 parameter는 Callback이라고 생각 하시면 됩니다.
@@ -50,6 +54,7 @@ public class ScanSong : MonoBehaviour
 
 	private IEnumerator ScanAndContinue(OnFinished onFinished)
 	{
+		Debug.Log("[TEST]ScanAndContinue");
 		/**
 		 * Game Scene 을 로드합니다.
 		 * 단, 비활성화
@@ -60,21 +65,47 @@ public class ScanSong : MonoBehaviour
 		/**
 		 * 노래 파일들을 찾는 스레드
 		 */
-		Thread thread = new Thread(ScanForSongsRecursively);
+		//Thread thread = new Thread(ScanForSongsRecursively);
+
 		/**
 		 * 백그라운드 설정은 메인 스레드가 종료되더라도 계속해서 실행하게 됩니다.
 		 * 단, UI 업데이트와 같은 작업은 메인 스레드에서 실행해야 합니다.
 		 */
-		thread.IsBackground = true;
+		//thread.IsBackground = true;
+
+
+		/**
+		 * WebGl의 경우 파일 경로에 슬러쉬가 붙기 때문에 아래와 같이 분기처리르 해준다.
+		 */
+		// if webGL, this will be something like "http://..."
+		string assetPath = Application.streamingAssetsPath;
+
+		bool isWebGl = assetPath.Contains("://") || assetPath.Contains(":///");
+		if (isWebGl)
+		{
+			StartCoroutine(
+				SendRequest(Path.Combine(assetPath, "myAsset"))
+			);
+		}
+		else // desktop app
+		{
+			// do whatever you need is app is not WebGL
+			ScanForSongsRecursively(new DirectoryInfo(Application.dataPath));
+		}
+
+		
+
+
 		/**
 		 * Application.dataPath는 Assets 폴더를 가리키는 상대 경로입니다.
 		 * DirectoryInfo 객체를 사용하면 해당 경로의 파일 및 폴더와 관련된 작업을 수행할 수 있습니다.
 		 */
-		thread.Start(new DirectoryInfo(Application.dataPath).Parent);
+		//thread.Start(new DirectoryInfo(Application.dataPath).Parent);
 
 		/**
 		 * songs를 얻어 올때까지 계속 기다린다.
 		 */
+		Debug.Log("[TEST] songs를 얻어 올때까지 계속 기다린다.");
 		while (true)
 		{
 			/**
@@ -87,7 +118,8 @@ public class ScanSong : MonoBehaviour
 			}
 		}
 		// 스레드 중단
-		thread.Abort();
+		//thread.Abort();
+		//Debug.Log("[TEST] 스레드 중단");
 
 
 		/**
@@ -115,6 +147,26 @@ public class ScanSong : MonoBehaviour
 
 		// Game Scene 활성화
 		asyncLoad.allowSceneActivation = true;
+
+	}
+
+	/**
+	 * WebGL에서는 WebRequest로 외부 스토리지에서 파일을 가져오자..
+	 */
+	private IEnumerator SendRequest(string url)
+	{
+		UnityWebRequest request = UnityWebRequest.Get(url);
+
+		yield return request.SendWebRequest();
+
+		if (request.result == UnityWebRequest.Result.ConnectionError || request.result == UnityWebRequest.Result.ProtocolError)
+		{
+			Debug.Log(request.error);
+		}
+		else
+		{
+			Debug.Log("data:" + request.downloadHandler.data);
+		}
 	}
 
 	/**
@@ -123,6 +175,7 @@ public class ScanSong : MonoBehaviour
 	 */
 	private void ScanForSongsRecursively(object folder)
 	{
+		Debug.Log("[TEST] ScanForSongsRecursively");
 		List<SongInfo> list = new List<SongInfo>();
 		List<DirectoryInfo> foldersToScan = new List<DirectoryInfo>();
 
@@ -142,6 +195,7 @@ public class ScanSong : MonoBehaviour
 				 */
 				foreach (FileInfo f in currentScan[i].GetFiles())
 				{
+					//Debug.Log("FileInfo:" + f);
 					/**
 					 * song.ini 파일이 있을 경우에만
 					 * 안에 있는 모든 파일들을 이용하여 songInfo를 만든다.
