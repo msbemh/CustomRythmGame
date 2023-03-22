@@ -65,7 +65,21 @@ MonoBehaviour:
       - m_Id: c50564f62b92e204ebf9496652555753
         m_Value: ServerData/[BuildTarget]
       - m_Id: 192fc8ce3a2d6ac4ebd00398d1a16808
-        m_Value: https://s3.ap-northeast-2.amazonaws.com/com.custom.rythmgame.music.info.get
+        m_Value: https://s3.ap-northeast-2.amazonaws.com/com.custom.rythmgame.music.info.get/[BuildTarget]
+    - m_InheritedParent: 
+      m_Id: 164a36e72d17111419714c3457af2b0e
+      m_ProfileName: AWS
+      m_Values:
+      - m_Id: 2df8e4a41ee9dd8428c8255d68fb23a9
+        m_Value: '[UnityEditor.EditorUserBuildSettings.activeBuildTarget]'
+      - m_Id: b78edcc8dfde24e4392c5927549f5f60
+        m_Value: '[UnityEngine.AddressableAssets.Addressables.BuildPath]/[BuildTarget]'
+      - m_Id: 5e07a4df33c70b54790c2d984aad7d3d
+        m_Value: '{UnityEngine.AddressableAssets.Addressables.RuntimePath}/[BuildTarget]'
+      - m_Id: c50564f62b92e204ebf9496652555753
+        m_Value: ServerData/[BuildTarget]
+      - m_Id: 192fc8ce3a2d6ac4ebd00398d1a16808
+        m_Value: https://s3.ap-northeast-2.amazonaws.com/com.custom.rythmgame.music.info.get/[BuildTarget]
     m_ProfileEntryNames:
     - m_Id: 2df8e4a41ee9dd8428c8255d68fb23a9
       m_Name: BuildTarget
@@ -86,6 +100,7 @@ MonoBehaviour:
   m_LabelTable:
     m_LabelNames:
     - default
+    - aws
   m_SchemaTemplates: []
   m_GroupTemplateObjects:
   - {fileID: 11400000, guid: d2330f05ed0b2fb4cbd74b41d8cc0d89, type: 2}
@@ -99,7 +114,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 1f017f76a98488a409e0d8212b80aa86, type: 2}
   - {fileID: 11400000, guid: 715ad084a21763f469fc894b63ae291c, type: 2}
   - {fileID: 11400000, guid: 9c422a9e69cd8ef43a1db8dbb9f285d7, type: 2}
-  m_ActiveProfileId: 757809747495ea34699459bca5113ad2
+  m_ActiveProfileId: 164a36e72d17111419714c3457af2b0e
   m_HostingServicesManager:
     m_HostingServiceInfos: []
     m_Settings: {fileID: 11400000}

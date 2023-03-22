@@ -7,6 +7,10 @@ using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 
 using UnityEngine.Networking;
+using UnityEngine.AddressableAssets;
+using UnityEngine.ResourceManagement.AsyncOperations;
+
+
 
 public class ScanSong : MonoBehaviour
 {
@@ -17,13 +21,16 @@ public class ScanSong : MonoBehaviour
 	public Image loadingImage;
 	private List<SongInfo> songs = null;
 
+	private List<AudioClip> audios = new List<AudioClip>();
+	private AsyncOperationHandle<IList<AudioClip>> loadHandle;
+
 	/**
-	 * µ¿±âÈ­ ÀÛ¾÷À» ÇÒ¶§ »ç¿ëÇÒ ¿ÀºêÁ§Æ®
+	 * ë™ê¸°í™” ì‘ì—…ì„ í• ë•Œ ì‚¬ìš©í•  ì˜¤ë¸Œì íŠ¸
 	 */
 	System.Object lockObject = new System.Object();
 
 	/**
-	 * ³ë·¡ Á¤º¸
+	 * ë…¸ë˜ ì •ë³´
 	 */
 	[System.Serializable]
     public class SongInfo
@@ -37,14 +44,14 @@ public class ScanSong : MonoBehaviour
 
 		Debug.Log("[TEST]" + Application.persistentDataPath);
 		/**
-		 * ¾ÖÇÃ¸®ÄÉÀÌ¼ÇÀÇ ¹é±×¶ó¿îµå ·Îµù ¿ì¼± ¼øÀ§¸¦ ³·Ãß¾î¼­
-		 * ¸ŞÀÎ ½º·¹µå°¡ Áß¿äÇÑ ÀÛ¾÷À» ÀÛ¾÷ÇÏ´Âµ¥ ÁöÀåÀÌ ¾øµµ·Ï ÇÕ´Ï´Ù.
+		 * ì• í”Œë¦¬ì¼€ì´ì…˜ì˜ ë°±ê·¸ë¼ìš´ë“œ ë¡œë”© ìš°ì„  ìˆœìœ„ë¥¼ ë‚®ì¶”ì–´ì„œ
+		 * ë©”ì¸ ìŠ¤ë ˆë“œê°€ ì¤‘ìš”í•œ ì‘ì—…ì„ ì‘ì—…í•˜ëŠ”ë° ì§€ì¥ì´ ì—†ë„ë¡ í•©ë‹ˆë‹¤.
 		 */
 		Application.backgroundLoadingPriority = UnityEngine.ThreadPriority.Low;
 
 		/**
-		 * delegate(){} Çü½ÄÀÇ parameter´Â CallbackÀÌ¶ó°í »ı°¢ ÇÏ½Ã¸é µË´Ï´Ù.
-		 * ³ë·¡ ¸ñ·ÏµéÀ» °¡Áö°í ¿À´Â ÀÛ¾÷
+		 * delegate(){} í˜•ì‹ì˜ parameterëŠ” Callbackì´ë¼ê³  ìƒê° í•˜ì‹œë©´ ë©ë‹ˆë‹¤.
+		 * ë…¸ë˜ ëª©ë¡ë“¤ì„ ê°€ì§€ê³  ì˜¤ëŠ” ì‘ì—…
 		 */
         StartCoroutine(ScanAndContinue(delegate (List<SongInfo> songs)
         {
@@ -56,36 +63,41 @@ public class ScanSong : MonoBehaviour
 	{
 		Debug.Log("[TEST]ScanAndContinue");
 		/**
-		 * Game Scene À» ·ÎµåÇÕ´Ï´Ù.
-		 * ´Ü, ºñÈ°¼ºÈ­
+		 * Game Scene ì„ ë¡œë“œí•©ë‹ˆë‹¤.
+		 * ë‹¨, ë¹„í™œì„±í™”
 		 */
 		AsyncOperation asyncLoad = SceneManager.LoadSceneAsync("Game", LoadSceneMode.Single);
 		asyncLoad.allowSceneActivation = false;
 
 		/**
-		 * ³ë·¡ ÆÄÀÏµéÀ» Ã£´Â ½º·¹µå
+		 * ë…¸ë˜ íŒŒì¼ë“¤ì„ ì°¾ëŠ” ìŠ¤ë ˆë“œ
 		 */
 		//Thread thread = new Thread(ScanForSongsRecursively);
 
 		/**
-		 * ¹é±×¶ó¿îµå ¼³Á¤Àº ¸ŞÀÎ ½º·¹µå°¡ Á¾·áµÇ´õ¶óµµ °è¼ÓÇØ¼­ ½ÇÇàÇÏ°Ô µË´Ï´Ù.
-		 * ´Ü, UI ¾÷µ¥ÀÌÆ®¿Í °°Àº ÀÛ¾÷Àº ¸ŞÀÎ ½º·¹µå¿¡¼­ ½ÇÇàÇØ¾ß ÇÕ´Ï´Ù.
+		 * ë°±ê·¸ë¼ìš´ë“œ ì„¤ì •ì€ ë©”ì¸ ìŠ¤ë ˆë“œê°€ ì¢…ë£Œë˜ë”ë¼ë„ ê³„ì†í•´ì„œ ì‹¤í–‰í•˜ê²Œ ë©ë‹ˆë‹¤.
+		 * ë‹¨, UI ì—…ë°ì´íŠ¸ì™€ ê°™ì€ ì‘ì—…ì€ ë©”ì¸ ìŠ¤ë ˆë“œì—ì„œ ì‹¤í–‰í•´ì•¼ í•©ë‹ˆë‹¤.
 		 */
 		//thread.IsBackground = true;
 
 
 		/**
-		 * WebGlÀÇ °æ¿ì ÆÄÀÏ °æ·Î¿¡ ½½·¯½¬°¡ ºÙ±â ¶§¹®¿¡ ¾Æ·¡¿Í °°ÀÌ ºĞ±âÃ³¸®¸£ ÇØÁØ´Ù.
+		 * WebGlì˜ ê²½ìš° íŒŒì¼ ê²½ë¡œì— ìŠ¬ëŸ¬ì‰¬ê°€ ë¶™ê¸° ë•Œë¬¸ì— ì•„ë˜ì™€ ê°™ì´ ë¶„ê¸°ì²˜ë¦¬ë¥´ í•´ì¤€ë‹¤.
 		 */
 		// if webGL, this will be something like "http://..."
 		string assetPath = Application.streamingAssetsPath;
 
 		bool isWebGl = assetPath.Contains("://") || assetPath.Contains(":///");
-		if (isWebGl)
+		if (!isWebGl)
 		{
-			StartCoroutine(
-				SendRequest(Path.Combine(assetPath, "myAsset"))
-			);
+			loadHandle = Addressables.LoadAssetsAsync<AudioClip>("aws", (result) => { audios.Add(result); });
+			loadHandle.Completed += (result) =>
+			{
+				audios.AddRange(result.Result);
+				//SetList();
+			};
+
+			//StartCoroutine(GetAssetBundle());
 		}
 		else // desktop app
 		{
@@ -97,19 +109,19 @@ public class ScanSong : MonoBehaviour
 
 
 		/**
-		 * Application.dataPath´Â Assets Æú´õ¸¦ °¡¸®Å°´Â »ó´ë °æ·ÎÀÔ´Ï´Ù.
-		 * DirectoryInfo °´Ã¼¸¦ »ç¿ëÇÏ¸é ÇØ´ç °æ·ÎÀÇ ÆÄÀÏ ¹× Æú´õ¿Í °ü·ÃµÈ ÀÛ¾÷À» ¼öÇàÇÒ ¼ö ÀÖ½À´Ï´Ù.
+		 * Application.dataPathëŠ” Assets í´ë”ë¥¼ ê°€ë¦¬í‚¤ëŠ” ìƒëŒ€ ê²½ë¡œì…ë‹ˆë‹¤.
+		 * DirectoryInfo ê°ì²´ë¥¼ ì‚¬ìš©í•˜ë©´ í•´ë‹¹ ê²½ë¡œì˜ íŒŒì¼ ë° í´ë”ì™€ ê´€ë ¨ëœ ì‘ì—…ì„ ìˆ˜í–‰í•  ìˆ˜ ìˆìŠµë‹ˆë‹¤.
 		 */
 		//thread.Start(new DirectoryInfo(Application.dataPath).Parent);
 
 		/**
-		 * songs¸¦ ¾ò¾î ¿Ã¶§±îÁö °è¼Ó ±â´Ù¸°´Ù.
+		 * songsë¥¼ ì–»ì–´ ì˜¬ë•Œê¹Œì§€ ê³„ì† ê¸°ë‹¤ë¦°ë‹¤.
 		 */
-		Debug.Log("[TEST] songs¸¦ ¾ò¾î ¿Ã¶§±îÁö °è¼Ó ±â´Ù¸°´Ù.");
+		Debug.Log("[TEST] songsë¥¼ ì–»ì–´ ì˜¬ë•Œê¹Œì§€ ê³„ì† ê¸°ë‹¤ë¦°ë‹¤.");
 		while (true)
 		{
 			/**
-			 * ¹«ÇÑ while¹®¿¡¼­ ´ÙÀ½ ÇÁ·¹ÀÓ ±îÁö ÀÏ½ÃÁß´Ü
+			 * ë¬´í•œ whileë¬¸ì—ì„œ ë‹¤ìŒ í”„ë ˆì„ ê¹Œì§€ ì¼ì‹œì¤‘ë‹¨
 			 */
 			yield return null;
 			lock (lockObject)
@@ -117,13 +129,13 @@ public class ScanSong : MonoBehaviour
 				if (songs != null) break;
 			}
 		}
-		// ½º·¹µå Áß´Ü
+		// ìŠ¤ë ˆë“œ ì¤‘ë‹¨
 		//thread.Abort();
-		//Debug.Log("[TEST] ½º·¹µå Áß´Ü");
+		//Debug.Log("[TEST] ìŠ¤ë ˆë“œ ì¤‘ë‹¨");
 
 
 		/**
-		 * Game SceneÀÌ ·Îµù ¿Ï·á µÉ µ¿¾È ´ë±âÇÑ´Ù.
+		 * Game Sceneì´ ë¡œë”© ì™„ë£Œ ë  ë™ì•ˆ ëŒ€ê¸°í•œë‹¤.
 		 */
 		allSongs = songs;
 		while (asyncLoad.isDone)
@@ -131,13 +143,13 @@ public class ScanSong : MonoBehaviour
 			Debug.Log("Still loading scene: " + asyncLoad.progress);
 			if (asyncLoad.progress >= 0.9) break;
 			/**
-			 * ¹«ÇÑ while¹®¿¡¼­ ´ÙÀ½ ÇÁ·¹ÀÓ ±îÁö ÀÏ½ÃÁß´Ü
+			 * ë¬´í•œ whileë¬¸ì—ì„œ ë‹¤ìŒ í”„ë ˆì„ ê¹Œì§€ ì¼ì‹œì¤‘ë‹¨
 			 */
 			yield return null;
 		}
 
 		/**
-		 * ·Îµù ÀÌ¹ÌÁö¸¦ ÃµÃµÈ÷ Åõ¸íÈ­ ½ÃÅ²´Ù.
+		 * ë¡œë”© ì´ë¯¸ì§€ë¥¼ ì²œì²œíˆ íˆ¬ëª…í™” ì‹œí‚¨ë‹¤.
 		 */
 		while (loadingImage.color.a > 0)
 		{
@@ -145,33 +157,29 @@ public class ScanSong : MonoBehaviour
 			yield return null;
 		}
 
-		// Game Scene È°¼ºÈ­
+		// Game Scene í™œì„±í™”
 		asyncLoad.allowSceneActivation = true;
 
 	}
 
-	/**
-	 * WebGL¿¡¼­´Â WebRequest·Î ¿ÜºÎ ½ºÅä¸®Áö¿¡¼­ ÆÄÀÏÀ» °¡Á®¿ÀÀÚ..
-	 */
-	private IEnumerator SendRequest(string url)
-	{
-		UnityWebRequest request = UnityWebRequest.Get(url);
-
-		yield return request.SendWebRequest();
-
-		if (request.result == UnityWebRequest.Result.ConnectionError || request.result == UnityWebRequest.Result.ProtocolError)
-		{
-			Debug.Log(request.error);
-		}
-		else
-		{
-			Debug.Log("data:" + request.downloadHandler.data);
-		}
-	}
+	//IEnumerator GetAssetBundle()
+	//{
+	//	UnityWebRequest www = UnityWebRequest.GetAssetBundle("http://www.my-server.com/myData.unity3d");
+	//	yield return www.Send();
+	//
+	//	if (www.isError)
+	//	{
+	//		Debug.Log(www.error);
+	//	}
+	//	else
+	//	{
+	//		AssetBundle bundle = ((DownloadHandlerAssetBundle)www.downloadHandler).assetBundle;
+	//	}
+	//}
 
 	/**
-	 * ³ë·¡ Ã£±â
-	 * folder´Â Assets Æú´õÀÇ »óÀ§
+	 * ë…¸ë˜ ì°¾ê¸°
+	 * folderëŠ” Assets í´ë”ì˜ ìƒìœ„
 	 */
 	private void ScanForSongsRecursively(object folder)
 	{
@@ -186,19 +194,19 @@ public class ScanSong : MonoBehaviour
 			DirectoryInfo[] currentScan = foldersToScan.ToArray();
 			foldersToScan.Clear();
 			/**
-			 * ¸ğµç Æú´õ¸¦ for µ¹¸°´Ù.
+			 * ëª¨ë“  í´ë”ë¥¼ for ëŒë¦°ë‹¤.
 			 */
 			for (int i = 0; i < currentScan.Length; ++i)
 			{
 				/**
-				 * Æú´õ¾È¿¡ ¸ğµç ÆÄÀÏµéÀ» °Ë»çÇÑ´Ù.
+				 * í´ë”ì•ˆì— ëª¨ë“  íŒŒì¼ë“¤ì„ ê²€ì‚¬í•œë‹¤.
 				 */
 				foreach (FileInfo f in currentScan[i].GetFiles())
 				{
 					//Debug.Log("FileInfo:" + f);
 					/**
-					 * song.ini ÆÄÀÏÀÌ ÀÖÀ» °æ¿ì¿¡¸¸
-					 * ¾È¿¡ ÀÖ´Â ¸ğµç ÆÄÀÏµéÀ» ÀÌ¿ëÇÏ¿© songInfo¸¦ ¸¸µç´Ù.
+					 * song.ini íŒŒì¼ì´ ìˆì„ ê²½ìš°ì—ë§Œ
+					 * ì•ˆì— ìˆëŠ” ëª¨ë“  íŒŒì¼ë“¤ì„ ì´ìš©í•˜ì—¬ songInfoë¥¼ ë§Œë“ ë‹¤.
 					 */
 					if (f.Name == "song.ini")
 					{
@@ -207,7 +215,7 @@ public class ScanSong : MonoBehaviour
 					}
 				}
 				/**
-				 * Æú´õÀÇ ÇÏÀ§ Æú´õ¸¦ Ãß°¡ÇÏ¿© ÇÏÀ§ ÆÄÀÏµéÀ» ¸ğµÎ °Ë»çÇÒ ¼ö ÀÖµµ·Ï ÇÑ´Ù.
+				 * í´ë”ì˜ í•˜ìœ„ í´ë”ë¥¼ ì¶”ê°€í•˜ì—¬ í•˜ìœ„ íŒŒì¼ë“¤ì„ ëª¨ë‘ ê²€ì‚¬í•  ìˆ˜ ìˆë„ë¡ í•œë‹¤.
 				 */
 				foreach (DirectoryInfo d in currentScan[i].GetDirectories())
 				{
@@ -244,14 +252,14 @@ public class ScanSong : MonoBehaviour
 	}
 
 	/**
-	 * SongInfo¸¦ »ı¼ºÇÑ´Ù.
+	 * SongInfoë¥¼ ìƒì„±í•œë‹¤.
 	 */
 	private SongInfo CreateSongInfo(DirectoryInfo folder)
 	{
 		SongInfo songInfo = new SongInfo();
 
 		/**
-		 * notes.chart ÆÄÀÏÀ» Ãß°¡
+		 * notes.chart íŒŒì¼ì„ ì¶”ê°€
 		 */
 		foreach (FileInfo f in folder.GetFiles())
 		{
@@ -263,9 +271,9 @@ public class ScanSong : MonoBehaviour
 		}
 
 		/**
-		 * song.ini ÆÄÀÏÀ» °Ë»öÇÏ¿©
-		 * ÇÊ¿äÇÑ Á¤º¸µéÀ» ¸ğµÎ °¡Á®¿Â´Ù.
-		 * artist, name, displayArtist, displayName Á¤º¸ ÃßÃâ
+		 * song.ini íŒŒì¼ì„ ê²€ìƒ‰í•˜ì—¬
+		 * í•„ìš”í•œ ì •ë³´ë“¤ì„ ëª¨ë‘ ê°€ì ¸ì˜¨ë‹¤.
+		 * artist, name, displayArtist, displayName ì •ë³´ ì¶”ì¶œ
 		 */
 		FileInfo ini = null;
 		foreach (FileInfo f in folder.GetFiles())
